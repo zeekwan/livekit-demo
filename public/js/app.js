@@ -219,7 +219,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Set up MediaRecorder
       const mediaStream = new MediaStream([audioTrack.mediaStreamTrack]);
-      mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'audio/webm' });
+      mediaRecorder = new MediaRecorder(mediaStream, { 
+        mimeType: 'audio/webm',
+        audioBitsPerSecond: 128000 // 128 kbps for good quality voice
+      });
       
       // Clear previous recording
       audioChunks = [];
@@ -235,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
           log('Recording stopped');
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           if (recordedAudio) {
+              URL.revokeObjectURL(recordedAudio.src); // Clean up old URL
               recordedAudio.remove();
           }
           recordedAudio = document.createElement('audio');
@@ -242,6 +246,11 @@ document.addEventListener('DOMContentLoaded', () => {
           recordedAudio.controls = true;
           document.getElementById('recordings-container').appendChild(recordedAudio);
           log('Audio player created');
+      };
+
+      mediaRecorder.onerror = (event) => {
+          log(`MediaRecorder error: ${event.error.message}`, 'error');
+          stopListening();
       };
 
       // Start recording immediately
