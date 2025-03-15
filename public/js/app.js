@@ -157,10 +157,28 @@ document.addEventListener('DOMContentLoaded', () => {
               log(`Participant ${participant.identity} metadata changed`, 'info');
           })
           .on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
-              // Enhanced speaker logging
+              // Enhanced speaker monitoring with detailed logging
               if (speakers.length > 0) {
                   const speakerNames = speakers.map(speaker => speaker.identity).join(', ');
                   log(`Active speakers: ${speakerNames}`, 'info');
+                  
+                  // Check if local participant is speaking
+                  const localParticipant = speakers.find(
+                      speaker => speaker.identity === room.localParticipant.identity
+                  );
+
+                  if (localParticipant) {
+                      log('You are currently speaking', 'info');
+                      updateStatus('Speaking...', 'listening');
+                  } else {
+                      // When others are speaking but you're not
+                      log('Others are speaking', 'info');
+                      updateStatus('Others speaking...', 'listening');
+                  }
+              } else {
+                  // No one is speaking
+                  log('Silence detected', 'info');
+                  updateStatus('Listening...', 'listening');
               }
           });
       
