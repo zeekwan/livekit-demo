@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Assistant POC</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <!-- Add LiveKit client library -->
+  <script src="https://cdn.jsdelivr.net/npm/livekit-client/dist/livekit-client.umd.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Voice Assistant</h1>
+    
+
+    <!-- Log Section -->
+    <div class="conversation-container">
+      <div id="conversation" class="conversation"></div>
+    </div>
+    
+    <!-- Controls Section -->
+    <div class="controls">
+      <button id="talk-button" class="talk-button">Talk</button>
+      <button id="playback-button">Play Last Recording</button>
+      <div id="status" class="status">Ready</div>
+    </div>
+
+    <!-- Audio Recordings Section -->
+    <div class="recordings-section">
+        <h3>Recorded Audio</h3>
+        <div id="recordings-container"></div>
+    </div>
+  </div>
+
+<!-- Add this near your controls section -->
+<div class="sensitivity-control">
+    <label for="speech-threshold">Speech Detection Sensitivity:</label>
+    <input 
+      type="range" 
+      id="speech-threshold" 
+      min="0" 
+      max="50" 
+      value="10" 
+      class="threshold-slider"
+    >
+    <span id="threshold-value">0.1</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/app.js"></script>
+</body>
+</html>
