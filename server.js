@@ -28,17 +28,6 @@ const createRoomToken = async (roomName, participantName) => {
   return await at.toJwt();
 };
 
-// For analytics/dashboard visibility
-const createAnalyticsToken = async () => {
-  const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
-    ttl: '24h',
-    name: 'analytics'
-  });
-  at.addGrant({ roomList: true });
-
-  return await at.toJwt();
-};
-
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -59,12 +48,8 @@ app.post('/get-token', async (req, res) => {
   }
 
   try {
-    // Try to create/get the room first
+    // Create the room if it doesn't exist
     try {
-      const rooms = await roomService.listRooms();
-      console.log('Current rooms:', rooms);
-      
-      // Create the room if it doesn't exist
       await roomService.createRoom({
         name: roomName,
         emptyTimeout: 60 * 10, // 10 minutes
@@ -72,8 +57,10 @@ app.post('/get-token', async (req, res) => {
       });
       console.log('Room created or already exists:', roomName);
     } catch (roomError) {
-      console.log('Room service error:', roomError);
-      // Continue anyway as the room might be created when the participant joins
+      // Ignore error if room already exists
+      if (!roomError.message.includes('already exists')) {
+        console.log('Room creation error:', roomError);
+      }
     }
 
     const token = await createRoomToken(roomName, participantName);
