@@ -3,20 +3,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const talkButton = document.getElementById('talk-button');
   const statusDiv = document.getElementById('status');
   const playbackButton = document.getElementById('playback-button');
-  const audioLevelMeter = document.getElementById('audio-level-meter');
-  const audioLevelValue = document.getElementById('audio-level-value');
-  const speechStatus = document.getElementById('speech-status');
-  const audioStats = document.getElementById('audio-stats');
   const conversationDiv = document.getElementById('conversation');
-  const thresholdSlider = document.getElementById('speech-threshold');
-  const thresholdValue = document.getElementById('threshold-value');
 
   // LiveKit Room
   let room = null;
   let audioTrack = null;
   let isListening = false;
 
-  // Replace the LiveKit Sandbox Configuration section with:d
+  // Replace the LiveKit Sandbox Configuration section with:
   const TOKEN_ENDPOINT = 'http://localhost:3001/get-token';
   const DEFAULT_ROOM_NAME = 'voice-assistant-room';
 
@@ -24,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let mediaRecorder = null;
   let audioChunks = [];
   let recordedAudio = null;
-  let speechThreshold = 0.1; // Default threshold
 
   // Add logging function at the top
   function log(message, type = 'info') {
@@ -164,10 +157,28 @@ document.addEventListener('DOMContentLoaded', () => {
               log(`Participant ${participant.identity} metadata changed`, 'info');
           })
           .on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
-              // Enhanced speaker logging
+              // Enhanced speaker monitoring with detailed logging
               if (speakers.length > 0) {
                   const speakerNames = speakers.map(speaker => speaker.identity).join(', ');
                   log(`Active speakers: ${speakerNames}`, 'info');
+                  
+                  // Check if local participant is speaking
+                  const localParticipant = speakers.find(
+                      speaker => speaker.identity === room.localParticipant.identity
+                  );
+
+                  if (localParticipant) {
+                      log('You are currently speaking', 'info');
+                      updateStatus('Speaking...', 'listening');
+                  } else {
+                      // When others are speaking but you're not
+                      log('Others are speaking', 'info');
+                      updateStatus('Others speaking...', 'listening');
+                  }
+              } else {
+                  // No one is speaking
+                  log('Silence detected', 'info');
+                  updateStatus('Listening...', 'listening');
               }
           });
       
@@ -190,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Start capturing audio
   async function startListening() {
     try {
-      log(`Starting audio capture (Speech threshold: ${speechThreshold.toFixed(2)})...`);
+      log('Starting audio capture...');
       updateStatus('Accessing microphone...', 'processing');
       
       // Connect to LiveKit if not already connected
@@ -229,65 +240,13 @@ document.addEventListener('DOMContentLoaded', () => {
           recordedAudio = document.createElement('audio');
           recordedAudio.src = URL.createObjectURL(audioBlob);
           recordedAudio.controls = true;
-          document.body.appendChild(recordedAudio);
+          document.getElementById('recordings-container').appendChild(recordedAudio);
           log('Audio player created');
       };
 
       // Start recording immediately
       mediaRecorder.start(1000);
       log('Started recording');
-
-      // Set up audio level monitoring
-      audioTrack.on(LivekitClient.TrackEvent.AudioLevelChanged, (level) => {
-          const percentage = Math.min(level * 100, 100);
-          
-          // Log significant changes
-          if (percentage > (speechThreshold * 100)) {
-              log(`Audio level: ${percentage.toFixed(1)}% (Threshold: ${(speechThreshold * 100).toFixed(1)}%)`);
-          }
-          
-          // Update speech status
-          if (level > speechThreshold) {
-              speechStatus.textContent = 'Speech Detected';
-              speechStatus.classList.add('speaking');
-          } else {
-              speechStatus.textContent = 'No Speech Detected';
-              speechStatus.classList.remove('speaking');
-          }
-      });
-
-      // Monitor active speakers
-      room.on(LivekitClient.RoomEvent.ActiveSpeakersChanged, (speakers) => {
-          log(`Active speakers changed: ${speakers.length} speakers`);
-          
-          const localParticipant = speakers.find(
-              speaker => speaker.identity === room.localParticipant.identity
-          );
-          
-          if (localParticipant) {
-              log('Local participant is speaking');
-              speechStatus.textContent = 'Active Speaker';
-              speechStatus.classList.add('speaking');
-          }
-      });
-
-      // Add audio statistics monitoring
-      audioTrack.on(LivekitClient.TrackEvent.StatisticsUpdated, (stats) => {
-          const audioStats = document.getElementById('audio-stats');
-          const statsInfo = {
-              packetsLost: stats.packetsLost || 0,
-              jitter: (stats.jitter || 0).toFixed(2),
-              bandwidth: ((stats.bandwidth || 0) / 1000).toFixed(2)
-          };
-          
-          log(`Audio stats - Bandwidth: ${statsInfo.bandwidth}kbps, Jitter: ${statsInfo.jitter}ms`);
-          
-          audioStats.innerHTML = `
-              <div>Packets Lost: ${statsInfo.packetsLost}</div>
-              <div>Jitter: ${statsInfo.jitter}ms</div>
-              <div>Bandwidth: ${statsInfo.bandwidth} kbps</div>
-          `;
-      });
 
       // Publish the track to the room
       await room.localParticipant.publishTrack(audioTrack);
@@ -333,13 +292,6 @@ document.addEventListener('DOMContentLoaded', () => {
     talkButton.textContent = 'Talk';
     updateStatus('Ready', '');
     
-    // Reset displays
-    audioLevelMeter.style.width = '0%';
-    audioLevelValue.textContent = 'Audio Level: 0';
-    speechStatus.textContent = 'No Speech Detected';
-    speechStatus.classList.remove('speaking');
-    audioStats.innerHTML = '';
-    
     log('Audio capture cleanup complete');
   }
 
@@ -383,61 +335,4 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStatus('Ready', '');
 
   playbackButton.addEventListener('click', playLastRecording);
-
-  // Add some CSS classes for visual feedback
-  const styles = `
-    .status.speaking {
-      color: green;
-      font-weight: bold;
-    }
-    
-    .audio-metrics {
-      margin-top: 10px;
-      padding: 10px;
-      background: #f5f5f5;
-      border-radius: 4px;
-    }
-  `;
-
-  // Add the styles to the document
-  const styleSheet = document.createElement('style');
-  styleSheet.innerText = styles;
-  document.head.appendChild(styleSheet);
-
-  // Add styles for log entries
-  const logStyles = `
-      ${styles}
-      
-      .log-entry {
-          padding: 5px;
-          margin: 2px 0;
-          font-family: monospace;
-          border-radius: 4px;
-      }
-      
-      .log-entry.info {
-          color: #0d47a1;
-      }
-      
-      .log-entry.warn {
-          color: #ef6c00;
-      }
-      
-      .log-entry.error {
-          color: #b71c1c;
-      }
-  `;
-
-  // Add the styles to the document
-  const logStyleSheet = document.createElement('style');
-  logStyleSheet.innerText = logStyles;
-  document.head.appendChild(logStyleSheet);
-
-  // Add the slider event listener
-  thresholdSlider.addEventListener('input', (e) => {
-      // Convert slider value (0-50) to threshold (0-0.5)
-      speechThreshold = e.target.value / 100;
-      thresholdValue.textContent = speechThreshold.toFixed(2);
-      log(`Speech detection threshold set to: ${speechThreshold.toFixed(2)}`, 'info');
-  });
 });
