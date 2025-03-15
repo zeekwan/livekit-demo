@@ -38,9 +38,11 @@ This project is a demonstration of a voice room application built using LiveKit.
    node server.js
    ```
 
-2. Open your browser and navigate to `http://localhost:3001` to access the application.
+2. Open your browser and navigate to `http://localhost:3001` to access the application. Open a second tab to listen to yourself (echo warning).
+
 
 
 
 ## Acknowledgments
 - [LiveKit](https://livekit.io/) for providing the real-time communication framework.
+- Cursor for building this mostly
