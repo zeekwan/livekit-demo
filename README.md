@@ -7,8 +7,7 @@ This project is a demonstration of a voice room application built using LiveKit.
 - Users can join a voice room and communicate in real-time.
 - The application handles user authentication and generates tokens for room access.
 - It logs participant activity and displays connection status.
-- Users can adjust speech detection sensitivity and play back recorded audio.
-
+- Saves audio locally for playback if you want
 
 ## Prerequisites
 - Node.js (version 23.7.0)
